@@ -67,13 +67,11 @@
 #define AFE_MASK_ALL (0xffffffff)
 
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature.1209435, 2017/08/01, add for KTV */
 #define KTV_DATA_UNIT_SIZE 3840
 
 extern char ktv_dl_data_unit[KTV_DATA_UNIT_SIZE];
 extern spinlock_t ktv_dl_data_lock;
 extern spinlock_t ktv_dl_ctrl_lock;
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 extern wait_queue_head_t ktvsleep;
 extern int ktv_running;
 extern int prevu4read;

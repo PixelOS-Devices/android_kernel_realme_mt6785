@@ -165,6 +165,10 @@ enum adsp_ipi_status adsp_send_message(enum adsp_ipi_id id, void *buf,
 		return ADSP_IPI_ERROR;
 	}
 
+	if (id == ADSP_IPI_DVFS_SUSPEND) {
+		set_adsp_state(pdata, ADSP_SUSPENDING);
+	}
+
 	if (len > (SHARE_BUF_SIZE - 16) || buf == NULL) {
 		pr_info("%s(), %s buffer error", __func__, "adsp");
 		return ADSP_IPI_ERROR;
@@ -187,18 +191,14 @@ static irqreturn_t adsp_irq_dispatcher(int irq, void *data)
 	struct irq_t *pdata = (struct irq_t *)data;
 
 	adsp_mt_clr_spm(pdata->cid);
-	if (!pdata->irq_cb || !pdata->clear_irq)
-		return IRQ_NONE;
-	#ifdef OPLUS_BUG_STABILITY
-        /*Wangkun@MULTIMEDIA.AUDIODRIVER.ADSP,2021/02/02,add for speaker no voice after OTA*/
-        pdata->irq_cb(irq, pdata->data, pdata->cid);
-        pdata->clear_irq(pdata->cid);
-        wmb();
-	#else /* OPLUS_BUG_STABILITY */
-        pdata->clear_irq(pdata->cid);
-        pdata->irq_cb(irq, pdata->data, pdata->cid);
-	#endif /* OPLUS_BUG_STABILITY */
-        return IRQ_HANDLED;
+
+	if (pdata->irq_cb)
+		pdata->irq_cb(irq, pdata->data, pdata->cid);
+
+	if (pdata->clear_irq)
+		pdata->clear_irq(pdata->cid);
+
+	return IRQ_HANDLED;
 }
 
 int adsp_irq_registration(u32 core_id, u32 irq_id, void *handler, void *data)
@@ -302,7 +302,7 @@ int adsp_reset(void)
 	adsp_mt_clear();
 
 	/* choose default clk mux */
-	adsp_set_clock_freq(CLK_TOP_CLK26M);
+	adsp_set_clock_freq(CLK_DEFAULT_26M_CK);
 	adsp_set_clock_freq(CLK_DEFAULT_INIT_CK);
 
 	/* restore tcm to initial state */

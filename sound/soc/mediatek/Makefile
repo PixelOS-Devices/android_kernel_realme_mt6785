@@ -11,23 +11,20 @@
 # GNU General Public License for more details.
 #
 subdir-ccflags-y += -Werror
-subdir-ccflags-y += -D__linux__
 
-#scp smartpa related code
+# scp smartpa related code
 obj-$(CONFIG_SND_SOC_MTK_SCP_SMARTPA) += scp_spk/
 obj-$(CONFIG_SND_SOC_MTK_SCP_SMARTPA) += utility/
 
-#scp vow bargein related code
-obj-$(CONFIG_MTK_VOW_BARGE_IN_SUPPORT) += scp_vow/
+# scp vow bargein related code
+obj-$(CONFIG_MTK_VOW_SUPPORT) += scp_vow/
+
+#scp ultra sound related code
+obj-$(CONFIG_MTK_ULTRASND_PROXIMITY) += scp_ultra/
 
 # dsp related code
 obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += audio_dsp/
 obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += common_int/
-
-#ifeq ($(strip $(OPLUS_BUG_STABILITY)),yes)
-# Zengchao.Duan@ODM_WT.MM.AudioDriver.Machine 2019/10/12, MonetX audio sia8108 bringup
-obj-y += sia81xx/
-#endif # OPLUS_BUG_STABILITY
 
 # btcvsd
 obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common/
@@ -37,15 +34,20 @@ obj-$(CONFIG_SND_SOC_MT6768) += mt6768/
 obj-$(CONFIG_SND_SOC_MT8168) += mt8168/
 obj-$(CONFIG_SND_SOC_MT6785) += mt6785/
 obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
+obj-$(CONFIG_SND_SOC_MT6877) += mt6877/
 obj-$(CONFIG_SND_SOC_MT6833) += mt6833/
 obj-$(CONFIG_SND_SOC_MT6853) += mt6853/
 obj-$(CONFIG_SND_SOC_MT6873) += mt6873/
 obj-$(CONFIG_SND_SOC_MT6885) += mt6885/
 obj-$(CONFIG_SND_SOC_MT8167) += mt8167/
-obj-$(CONFIG_SND_SOC_MT6893) += mt6885/
-obj-$(CONFIG_MTK_FSA4480_I2C) += fsa44xx/
+#ifdef ODM_HQ_EDIT
+#qiantao@ODM.HQ.Multimeida.Audio 2021/04/22 added for mic and spk  bring up
+obj-$(CONFIG_SND_SOC_SIA81XX) += sia81xx_space/
+obj-$(CONFIG_SND_SOC_AW87319) += aw87319_space/
+#endif
+obj-$(CONFIG_SND_SOC_MT6781) += mt6781/
 
-#mtk new arch
+# mtk new arch
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),)
 # MTK Codec Chip Support
 MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
@@ -118,7 +120,6 @@ endif
 
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(AUDIO_PLATFORM)/
-
 
 # Common include path
 subdir-ccflags-y += -Werror -I$(src)/common_int

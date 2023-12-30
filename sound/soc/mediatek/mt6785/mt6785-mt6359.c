@@ -16,6 +16,10 @@
 #include "../../codecs/mt6359.h"
 #include "../common/mtk-sp-spk-amp.h"
 
+#ifdef OPLUS_ARCH_EXTENDS
+#include "../../codecs/audio_extend_drv.h"
+#endif /* OPLUS_ARCH_EXTENDS */
+
 #ifdef CONFIG_SND_SOC_MT8185_EVB
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
@@ -97,10 +101,6 @@ static void audio_exthpamp_disable(void)
  * mt6785_mt6359_spk_amp_event()
  */
 #define EXT_SPK_AMP_W_NAME "Ext_Speaker_Amp"
-// wuhui@Multimedia.Audio.Driver 2021/01/02 modified for sia8109 bringup
-#ifdef OPLUS_BUG_COMPATIBILITY
-#include "../sia81xx/sia81xx_aux_dev_if.h"
-#endif
 
 static const char *const mt6785_spk_type_str[] = {MTK_SPK_NOT_SMARTPA_STR,
 						  MTK_SPK_RICHTEK_RT5509_STR,
@@ -161,7 +161,6 @@ static int aw87339_spk_scene_set(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
-/* wuhui@Multimedia.AudioDriver 2021/01/02,Add for aw87339 probe */
 extern int aw87339_audio_probe_get(void);
 static const char *const aw87339_Probe[] = { "Off", "On" };
 static const struct soc_enum aw87339_spk_probe_enum =
@@ -220,6 +219,80 @@ static int aw87359_spk_scene_set(struct snd_kcontrol *kcontrol,
 #endif
 #endif /* OPLUS_BUG_STABILITY */
 
+#ifdef OPLUS_BUG_COMPATIBILITY//OPLUS_BUG_COMPATIBILITY
+enum oplus_pa_type_def {
+	OPLUS_PA_NXP = 0,
+	OPLUS_PA_AWINIC,
+	OPLUS_PA_SIA,
+	OPLUS_PA_AWINIC_DIGITAL,
+	OPLUS_PA_TYPE_NUM
+};
+static int oplus_pa_type = OPLUS_PA_NXP;
+
+//if more config values, set a bigger number
+#define AUDIO_EXTERN_CONFIG_MAX_NUM  4
+#define OPLUS_PA_TYPE_OFFSET 0
+int audio_extern[AUDIO_EXTERN_CONFIG_MAX_NUM] = {0};
+
+static int read_audio_extern_config_dts(struct platform_device *pdev)
+{
+	int ret;
+	int count, i;
+	count = of_property_count_u32_elems(pdev->dev.of_node, "audio_extern_config");
+	if (count <= 0) {
+		dev_err(&pdev->dev, "%s: no property match audio_extern_config\n", __func__);
+		return -ENODATA;
+	} else if (count > AUDIO_EXTERN_CONFIG_MAX_NUM) {
+		dev_err(&pdev->dev, "%s: audio_extern_config num=%d > %d(max numbers)\n",
+				__func__, count, AUDIO_EXTERN_CONFIG_MAX_NUM);
+		return -EINVAL;
+	}
+
+	ret = of_property_read_u32_array(pdev->dev.of_node, "audio_extern_config",
+			audio_extern, count);
+	if (ret) {
+		dev_err(&pdev->dev, "%s: read audio_extern_config error = %d\n", __func__, ret);
+		return ret;
+	}
+	for (i = 0; i < count; i++) {
+		dev_info(&pdev->dev, "%s: audio_extern[%d] = %d\n",
+				__func__, i ,audio_extern[i]);
+	}
+
+	if (OPLUS_PA_TYPE_OFFSET < count) {
+		oplus_pa_type = audio_extern[OPLUS_PA_TYPE_OFFSET];
+		dev_info(&pdev->dev, "%s: pa_type = audio_extern[%d] = %d\n",
+				__func__, OPLUS_PA_TYPE_OFFSET , oplus_pa_type);
+	}
+
+	return ret;
+}
+
+static int mt6785_audio_extern_config_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	int i;
+
+	for (i = 0; i < AUDIO_EXTERN_CONFIG_MAX_NUM; i++) {
+		ucontrol->value.integer.value[i] = audio_extern[i];
+		pr_info("%s(), OPLUS_AUDIO_EXTERN_CONFIG get value(%d) = %d",
+				__func__, i, audio_extern[i]);
+	}
+
+	return 0;
+}
+
+static int mt6785_audio_extern_config_ctl(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = AUDIO_EXTERN_CONFIG_MAX_NUM;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0x7fffffff; /* 32 bit value,  */
+
+	return 0;
+}
+#endif  /*OPLUS_BUG_COMPATIBILITY*/
 static int mt6785_spk_type_get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
@@ -375,6 +448,15 @@ static const struct snd_kcontrol_new mt6785_mt6359_controls[] = {
 	SOC_ENUM_EXT("AW87339 Spk Probe Get", aw87339_spk_probe_enum,
 			aw87339_spk_probe_get, NULL),
 #endif /* OPLUS_BUG_STABILITY */
+#ifdef OPLUS_BUG_COMPATIBILITY
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "OPLUS_AUDIO_EXTERN_CONFIG",
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.info = mt6785_audio_extern_config_ctl,
+		.get = mt6785_audio_extern_config_get
+	},
+#endif //OPLUS_BUG_COMPATIBILITY
 };
 
 /*
@@ -386,7 +468,11 @@ static int mt6785_mt6359_i2s_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	unsigned int rate = params_rate(params);
+#ifdef CONFIG_SND_SOC_CS35L41
+	unsigned int mclk_fs_ratio = 256;
+#else
 	unsigned int mclk_fs_ratio = 128;
+#endif
 	unsigned int mclk_fs = rate * mclk_fs_ratio;
 
 	return snd_soc_dai_set_sysclk(rtd->cpu_dai,
@@ -631,6 +717,195 @@ static const struct snd_soc_ops mt6785_mt6359_vow_ops = {
 };
 #endif  // #ifdef CONFIG_MTK_VOW_SUPPORT
 
+#ifdef CONFIG_SND_SOC_CS35L41
+static int cirrus_prince_devs = 4;
+static struct snd_soc_codec_conf *mt_prince_codec_conf;
+
+#define CS35L41_REG_ASP_EN        0x4800
+#define CS35L41_ASP_TX_MASK       0x03
+#define CS35L41_ASP_TX_EN         0x01
+#define CS35L41_ASP_TX_DISABLE    0x0
+
+#define CS35L41_ASP_CTL2          0x4808
+#define CS35L41_ASP_DATA_CTL1     0x4830
+
+#define CS35L41_ASP_WIDTH_MASK    0xff0000
+#define CS35L41_ASP_WIDTH_16BIT   0x100000
+#define CS35L41_ASP_TX_WL_MASK    0x3f
+#define CS35L41_ASP_TX_WL_16BIT   0x10
+
+static int cs35l41_enable_tx(struct snd_soc_codec *codec, int ch_num)
+{
+	unsigned int value = 0;
+
+//TODO:   By default, Amp TX is 24bit.
+//If need change to 16bit, use the same way to update ASP_WIDTH & ASP_TX_WL reg
+#ifdef PRINCE_TX_16BIT
+	/* Change to 16Bit data width */
+	dev_info(codec->dev, "%s: Set echo ref to 16bit data format\n",
+				__func__);
+	snd_soc_update_bits(codec, CS35L41_ASP_CTL2, CS35L41_ASP_WIDTH_MASK,
+				CS35L41_ASP_WIDTH_16BIT);
+	snd_soc_update_bits(codec, CS35L41_ASP_DATA_CTL1, CS35L41_ASP_TX_WL_MASK,
+				CS35L41_ASP_TX_WL_16BIT);
+#endif
+	value = snd_soc_read(codec, CS35L41_REG_ASP_EN);
+	dev_info(codec->dev, "%s: before enable_tx reg = 0x%x\n",
+				__func__, value);
+	snd_soc_update_bits(codec, CS35L41_REG_ASP_EN, CS35L41_ASP_TX_MASK,
+				CS35L41_ASP_TX_EN << ch_num);
+	value = snd_soc_read(codec, CS35L41_REG_ASP_EN);
+	dev_info(codec->dev, "%s: after enable_tx reg = 0x%x\n",
+				__func__, value);
+	return 0;
+}
+
+static int cs35l41_disable_tx(struct snd_soc_codec *codec)
+{
+	unsigned int value = 0;
+
+	value = snd_soc_read(codec, CS35L41_REG_ASP_EN);
+
+	dev_info(codec->dev, "%s: before disable_tx reg = 0x%x\n",
+				__func__, value);
+	snd_soc_update_bits(codec, CS35L41_REG_ASP_EN, CS35L41_ASP_TX_MASK, CS35L41_ASP_TX_DISABLE);
+	value = snd_soc_read(codec, CS35L41_REG_ASP_EN);
+	dev_info(codec->dev, "%s: after disable_tx reg = 0x%x\n",
+				__func__, value);
+	return 0;
+}
+
+static int cs35l41_snd_startup(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_card *card = rtd->card;
+	struct snd_soc_dai **codec_dais = rtd->codec_dais;
+	int ret, i;
+
+	for (i = 0; i < rtd->num_codecs; i++) {
+		// Set codec_dai as slave
+		ret = snd_soc_dai_set_fmt(codec_dais[i],
+						SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_I2S);
+		if (ret < 0) {
+			dev_info(card->dev, "%s: Failed to set fmt codec dai: %d\n",
+				__func__, ret);
+			return ret;
+		}
+
+		ret = snd_soc_codec_set_sysclk(codec_dais[i]->codec, 0, 0,
+						1536000*2,
+						SND_SOC_CLOCK_IN);
+		if (ret < 0) {
+			dev_info(card->dev, "%s: Failed to set codec sysclk: %d\n",
+					__func__, ret);
+			return ret;
+		}
+
+		ret = snd_soc_dai_set_sysclk(codec_dais[i], 0,
+						1536000*2,
+						SND_SOC_CLOCK_IN);
+		if (ret < 0) {
+			dev_info(card->dev, "%s: Failed to set dai sysclk: %d\n",
+					__func__, ret);
+			return ret;
+		}
+		/* Enable Amp TX path */
+		if (i < 2) { /* Enable CH0 for SPK1 & SPK2 */
+			cs35l41_enable_tx(codec_dais[i]->codec, 0);
+		} else {  /* Enable CH1 for SPK1 & SPK2 */
+			cs35l41_enable_tx(codec_dais[i]->codec, 1);
+		}
+	}
+
+	dev_info(card->dev, "-%s\n", __func__);
+	return 0;
+}
+
+void cs35l41_snd_shutdown(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_card *card = rtd->card;
+	struct snd_soc_dai **codec_dais = rtd->codec_dais;
+	int i;
+
+	for (i = 0; i < rtd->num_codecs; i++) {
+		/* Disable Amp TX path */
+		cs35l41_disable_tx(codec_dais[i]->codec);
+	}
+
+	dev_info(card->dev, "-%s\n", __func__);
+}
+
+static struct snd_soc_ops cs35l41_be_ops = {
+	.startup = cs35l41_snd_startup,
+	.shutdown = cs35l41_snd_shutdown,
+};
+
+static int cs35l41_mi2s_snd_init(struct snd_soc_pcm_runtime *rtd)
+{
+	struct snd_soc_card *card = rtd->card;
+	struct snd_soc_codec *spk1_cdc = rtd->codec_dais[0]->codec;
+	struct snd_soc_dapm_context *spk1_dapm = snd_soc_codec_get_dapm(spk1_cdc);
+	struct snd_soc_codec *spk2_cdc = rtd->codec_dais[1]->codec;
+	struct snd_soc_dapm_context *spk2_dapm = snd_soc_codec_get_dapm(spk2_cdc);
+	struct snd_soc_codec *spk3_cdc = rtd->codec_dais[2]->codec;
+	struct snd_soc_dapm_context *spk3_dapm = snd_soc_codec_get_dapm(spk3_cdc);
+	struct snd_soc_codec *spk4_cdc = rtd->codec_dais[3]->codec;
+	struct snd_soc_dapm_context *spk4_dapm = snd_soc_codec_get_dapm(spk4_cdc);
+
+
+	dev_info(card->dev, "%s: found codec[%s]\n", __func__, dev_name(spk1_cdc->dev));
+	snd_soc_dapm_ignore_suspend(spk1_dapm, "SPK1 AMP Playback");
+	snd_soc_dapm_ignore_suspend(spk1_dapm, "SPK1 SPK");
+	snd_soc_dapm_ignore_suspend(spk1_dapm, "SPK1 VMON ADC");
+	snd_soc_dapm_ignore_suspend(spk1_dapm, "SPK1 AMP Capture");
+	snd_soc_dapm_sync(spk1_dapm);
+
+	dev_info(card->dev, "%s: found codec[%s]\n", __func__, dev_name(spk2_cdc->dev));
+	snd_soc_dapm_ignore_suspend(spk2_dapm, "SPK2 AMP Playback");
+	snd_soc_dapm_ignore_suspend(spk2_dapm, "SPK2 SPK");
+	snd_soc_dapm_ignore_suspend(spk2_dapm, "SPK2 VMON ADC");
+	snd_soc_dapm_ignore_suspend(spk2_dapm, "SPK2 AMP Capture");
+	snd_soc_dapm_sync(spk2_dapm);
+
+	dev_info(card->dev, "%s: found codec[%s]\n", __func__, dev_name(spk3_cdc->dev));
+	snd_soc_dapm_ignore_suspend(spk3_dapm, "SPK3 AMP Playback");
+	snd_soc_dapm_ignore_suspend(spk3_dapm, "SPK3 SPK");
+	snd_soc_dapm_ignore_suspend(spk3_dapm, "SPK3 VMON ADC");
+	snd_soc_dapm_ignore_suspend(spk3_dapm, "SPK3 AMP Capture");
+	snd_soc_dapm_sync(spk3_dapm);
+
+	dev_info(card->dev, "%s: found codec[%s]\n", __func__, dev_name(spk4_cdc->dev));
+	snd_soc_dapm_ignore_suspend(spk4_dapm, "SPK4 AMP Playback");
+	snd_soc_dapm_ignore_suspend(spk4_dapm, "SPK4 SPK");
+	snd_soc_dapm_ignore_suspend(spk4_dapm, "SPK4 VMON ADC");
+	snd_soc_dapm_ignore_suspend(spk4_dapm, "SPK4 AMP Capture");
+	snd_soc_dapm_sync(spk4_dapm);
+
+	return 0;
+}
+
+static struct snd_soc_dai_link_component cirrus_prince[] = {
+	{
+		.name = "cs35l41.6-0040",
+		.dai_name = "cs35l41-pcm",
+	},
+	{
+		.name = "cs35l41.6-0041",
+		.dai_name = "cs35l41-pcm",
+	},
+	{
+		.name = "cs35l41.6-0042",
+		.dai_name = "cs35l41-pcm",
+	},
+	{
+		.name = "cs35l41.6-0043",
+		.dai_name = "cs35l41-pcm",
+	},
+};
+
+
+#endif
 static struct snd_soc_dai_link mt6785_mt6359_dai_links[] = {
 	/* Front End DAI links */
 	{
@@ -1025,6 +1300,21 @@ static struct snd_soc_dai_link mt6785_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6785_i2s_hw_params_fixup,
 	},
+#if defined(CONFIG_SND_SOC_CS35L41)
+	{
+		.name = "I2S1",
+		.cpu_dai_name = "I2S1",
+		.codecs = cirrus_prince,
+		.num_codecs = ARRAY_SIZE(cirrus_prince),
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.ops = &cs35l41_be_ops,
+		.init = cs35l41_mi2s_snd_init,
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = 1,
+		.be_hw_params_fixup = mt6785_i2s_hw_params_fixup,
+	},
+#else
 	{
 		.name = "I2S1",
 		.cpu_dai_name = "I2S1",
@@ -1035,11 +1325,18 @@ static struct snd_soc_dai_link mt6785_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6785_i2s_hw_params_fixup,
 	},
+#endif
 	{
 		.name = "I2S2",
 		.cpu_dai_name = "I2S2",
+#ifdef CONFIG_SND_SOC_AS33970
+		.codec_dai_name = "cx33970-aif",
+		.codec_name = "cx33970.9-0041",
+		.ops = &mt6785_mt6359_i2s_ops,
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,
@@ -1320,6 +1617,17 @@ static struct snd_soc_dai_link mt6785_mt6359_dai_links[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
 #endif
+#if defined(CONFIG_MTK_ULTRASND_PROXIMITY)
+	{
+		.name = "SCP_ULTRA_Playback",
+		.stream_name = "SCP_ULTRA_Playback",
+		.cpu_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "snd_scp_ultra",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+	},
+#endif
+
 };
 
 static struct snd_soc_card mt6785_mt6359_soc_card = {
@@ -1344,6 +1652,14 @@ static int mt6785_mt6359_dev_probe(struct platform_device *pdev)
 	int ret, i;
 	int spk_out_dai_link_idx, spk_iv_dai_link_idx;
 	const char *name;
+#ifdef CONFIG_SND_SOC_CS35L41
+	struct device_node *prince_codec_of_node;
+	const char *prince_name_prefix[1];
+#endif
+
+#ifdef OPLUS_BUG_COMPATIBILITY//OPLUS_BUG_COMPATIBILITY
+	read_audio_extern_config_dts(pdev);
+#endif  /*OPLUS_BUG_COMPATIBILITY*/
 
 	ret = mtk_spk_update_info(card, pdev,
 				  &spk_out_dai_link_idx, &spk_iv_dai_link_idx,
@@ -1393,6 +1709,10 @@ static int mt6785_mt6359_dev_probe(struct platform_device *pdev)
 	if (!dsp_node)
 		dev_info(&pdev->dev, "Property 'snd_audio_dsp' missing or invalid\n");
 
+#ifdef OPLUS_ARCH_EXTENDS
+    extend_codec_i2s_be_dailinks(mt6785_mt6359_dai_links, ARRAY_SIZE(mt6785_mt6359_dai_links));
+#endif /* OPLUS_ARCH_EXTENDS */
+
 	for (i = 0; i < card->num_links; i++) {
 		if (mt6785_mt6359_dai_links[i].platform_name)
 			continue;
@@ -1418,6 +1738,10 @@ static int mt6785_mt6359_dev_probe(struct platform_device *pdev)
 		    i == spk_out_dai_link_idx ||
 		    i == spk_iv_dai_link_idx)
 			continue;
+#ifdef OPLUS_ARCH_EXTENDS
+		if (extend_codec_i2s_compare(mt6785_mt6359_dai_links, i))
+			continue;
+#endif /* OPLUS_ARCH_EXTENDS */
 		mt6785_mt6359_dai_links[i].codec_of_node = codec_node;
 	}
 #ifdef CONFIG_SND_SOC_MT8185_EVB
@@ -1425,13 +1749,41 @@ static int mt6785_mt6359_dev_probe(struct platform_device *pdev)
 #endif
 
 	card->dev = &pdev->dev;
-// wuhui@Multimedia.Audio.Driver 2021/01/02 modified for sia8109 bringup
-#ifdef OPLUS_BUG_COMPATIBILITY
-	ret = soc_aux_init_only_sia81xx(pdev, card);
-	if (ret)
-		dev_err(&pdev->dev, "%s soc_aux_init_only_sia8108 fail %d\n",
-			__func__, ret);
-#endif /* OPLUS_BUG_COMPATIBILITY */
+#ifdef CONFIG_SND_SOC_CS35L41
+	/* Alloc prince array of codec conf struct */
+	dev_info(&pdev->dev,
+				"%s: Default card num_configs = %d\n", __func__, card->num_configs);
+	mt_prince_codec_conf = devm_kcalloc(&pdev->dev,
+		card->num_configs + cirrus_prince_devs,
+		sizeof(struct snd_soc_codec_conf), GFP_KERNEL);
+	if (!mt_prince_codec_conf) {
+		ret = -ENOMEM;
+		return ret;
+	}
+
+	for (i = 0; i < cirrus_prince_devs; i++) {
+		prince_codec_of_node = of_parse_phandle(pdev->dev.of_node,
+			"cirrus,prince-devs", i);
+		ret = of_property_read_string_index(pdev->dev.of_node,
+			"cirrus,prince-dev-prefix", i, prince_name_prefix);
+		if (ret) {
+			dev_info(&pdev->dev,
+				"%s: failed to read prince dev prefix, ret = %d\n", __func__, ret);
+				ret = -EINVAL;
+				return ret;
+		}
+		dev_info(&pdev->dev,
+			"%s: prince_dev prefix[%d] = %s\n", __func__, i, prince_name_prefix);
+
+		mt_prince_codec_conf[card->num_configs + i].dev_name = NULL;
+		mt_prince_codec_conf[card->num_configs + i].of_node = prince_codec_of_node;
+		mt_prince_codec_conf[card->num_configs + i].name_prefix = prince_name_prefix[0];
+	}
+
+	card->num_configs += cirrus_prince_devs;
+	card->codec_conf = mt_prince_codec_conf;
+
+#endif
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret)
 		dev_err(&pdev->dev, "%s snd_soc_register_card fail %d\n",

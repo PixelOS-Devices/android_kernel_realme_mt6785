@@ -29,6 +29,7 @@
 #endif
 
 #ifdef CONFIG_MTK_AEE_FEATURE
+
 #define AUD_ASSERT(exp) \
 do { \
 	if (!(exp)) { \
@@ -37,7 +38,6 @@ do { \
 	} \
 } while (0)
 #else
-
 #define AUD_ASSERT(exp) \
 do { \
 	if (!(exp)) { \

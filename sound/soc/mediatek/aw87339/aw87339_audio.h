@@ -3,7 +3,7 @@
  ** ODM_HQ_EDIT
  ** File: aw87339_audio.h
  ** Description: header file of aw87339 speaker pa
- ** Version :1.0
+ ** Version: 1.0
  ** Date : 2019/10/09
  ** Author: fanxiongnan@ODM.HQ.Multimedia.Audio
  ** ---------------- Revision History: --------------------------
@@ -183,7 +183,6 @@ extern unsigned char aw87339_audio_kspk(void);
 extern unsigned char aw87339_audio_drcv(void);
 extern unsigned char aw87339_audio_abrcv(void);
 extern unsigned char aw87339_audio_rcvspk(void);
-/* wuhui@Multimedia.AudioDriver 2021/01/02,Add for aw87339 prob */
 extern int aw87339_audio_probe_get(void);
 #endif /* __AW87339_H__ */
 

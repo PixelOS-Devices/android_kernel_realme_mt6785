@@ -34,15 +34,16 @@
 #define TFA98XX_FLAG_TDM_DEVICE         (1 << 8)
 #define TFA98XX_FLAG_CHIP_SELECTED      (1 << 16)
 
+/*To support tfa9873*/
+#define TFA98XX_FLAG_ADAPT_NOISE_MODE   (1 << 9)
+
 #define TFA98XX_NUM_RATES		9
 
 #undef CONFIG_DEBUG_FS
 
-#ifdef VENDOR_EDIT
 /* xiang.fei@MM.AudioDriver.Codec, 2018/03/12, add for codec */
 extern bool g_speaker_resistance_fail;
 extern int get_boot_mode(void);
-#endif /* VENDOR_EDIT */
 #ifndef CONFIG_MTK_PLATFORM
 extern int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead);
 extern int send_tfa_cal_in_band(void *buf, int cmd_size);
@@ -95,6 +96,10 @@ struct tfa98xx {
 	struct delayed_work monitor_work;
 	struct delayed_work interrupt_work;
 	struct delayed_work tapdet_work;
+
+	/*To support tfa9873*/
+	struct delayed_work nmodeupdate_work;
+
 	struct mutex dsp_lock;
 	int dsp_init;
 	int dsp_fw_state;
@@ -139,12 +144,7 @@ struct tfa98xx {
 	unsigned int flags;
 	bool set_mtp_cal;
 	uint16_t cal_data;
-	#ifdef VENDOR_EDIT
-	/* Jianfeng.Qiu@PSW.MM.AudioDriver.SmartPA,
-	 *2018/04/20, Add for resource
-	 */
 	struct regulator *tfa98xx_vdd;
-	#endif /* VENDOR_EDIT */
 };
 
 

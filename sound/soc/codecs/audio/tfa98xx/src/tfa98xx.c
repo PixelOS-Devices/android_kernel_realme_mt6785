@@ -159,8 +159,6 @@ static const struct tfa98xx_rate rate_to_fssel[] = {
 	{ 48000, 8 },
 };
 
-#ifdef VENDOR_EDIT
-/* yongzhi.zhang@Multimedia.AudioDriver.SmartPA, 2016/11/24, Add for avoiding reading wrong version */
 bool is_tfa98xx_series(int rev){
     bool ret = false;
     if((rev == 0x80) || (rev == 0x81) || (rev == 0x92) || 
@@ -170,7 +168,6 @@ bool is_tfa98xx_series(int rev){
     return ret;
 }
 
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.FTM, 2017/07/25, Add for get spk revsion */
 static char const *ftm_spk_rev_text[] = {"NG", "OK"};
 static const struct soc_enum ftm_spk_rev_enum = SOC_ENUM_SINGLE_EXT(2, ftm_spk_rev_text);
 static int ftm_spk_rev_get(struct snd_kcontrol *kcontrol,
@@ -216,7 +213,6 @@ static const struct snd_kcontrol_new ftm_spk_rev_controls[] = {
 	SOC_ENUM_EXT("SPK_Pa Revision", ftm_spk_rev_enum,
 			ftm_spk_rev_get, ftm_spk_rev_put),
 };
-#endif /* VENDOR_EDIT */
 
 static inline char *tfa_cont_profile_name(struct tfa98xx *tfa98xx, int prof_idx)
 {
@@ -2795,11 +2791,8 @@ static int tfa98xx_probe(struct snd_soc_codec *codec)
 	pr_info("We created mixer control in probe  ret=%d\n", ret);
 
 	tfa98xx_add_widgets(tfa98xx);
-#ifdef VENDOR_EDIT
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.FTM, 2017/07/25, Add for get spk revsion */
 	snd_soc_add_codec_controls(tfa98xx->codec,
 	ftm_spk_rev_controls, ARRAY_SIZE(ftm_spk_rev_controls));
-#endif /* VENDOR_EDIT */
 
 	dev_info(codec->dev, "tfa98xx codec registered (%s)",
 		tfa98xx->fw.name);

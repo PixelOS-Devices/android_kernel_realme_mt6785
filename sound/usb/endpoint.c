@@ -833,8 +833,6 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
 	}
 //#ifndef OPLUS_ARCH_EXTENDS
 #if 0
-/* Jianqing.Liao@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/12/16, remove for use dram tranfer usb audio data*/
-
 	/* allocate and initialize data urbs */
 	if (usb_pipein(ep->pipe))
 		ep->databuf = mtk_usb_alloc_sram(USB_AUDIO_DATA_IN,

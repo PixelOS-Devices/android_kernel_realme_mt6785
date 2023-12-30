@@ -1,14 +1,12 @@
 /************************************************************************************
 ** File: -
-** VENDOR_EDIT
-** Copyright (C), 2020-2025, OPPO Mobile Comm Corp., Ltd
+** Copyright (C), 2020-2025, OPLUS Mobile Comm Corp., Ltd
 **
 ** Description:
 **     add audio extend driver
 ** Version: 1.0
 ** --------------------------- Revision History: --------------------------------
 **               <author>                                <date>          <desc>
-** Jianfeng.Qiu@MULTIMEDIA.AUDIODRIVER                 2020/07/13     Add this file
 **
 ************************************************************************************/
 
@@ -24,6 +22,7 @@
 enum {
 	CODEC_PA_NXP = 0,
 	CODEC_PA_AWINIC,
+	CODEC_PA_AWINIC_DIGITAL,
 	CODEC_PA_END,
 	CODEC_PA_MAX = CODEC_PA_END,
 };
@@ -43,6 +42,7 @@ enum {
 static const char *extend_pa_vendor[CODEC_PA_MAX] = {
 	[CODEC_PA_NXP] = "nxp",
 	[CODEC_PA_AWINIC] = "awinic",
+	[CODEC_PA_AWINIC_DIGITAL] = "awinic_digital",
 };
 
 static const char *extend_speaker_prop[CODEC_PROP_MAX] = {
@@ -208,7 +208,8 @@ static void extend_codec_be_dailink(struct codec_prop_info *codec_info, struct s
 	pr_info("%s: codec vendor: %s, dev_cnt: %d.\n", __func__, codec_info->codec_vendor, codec_info->dev_cnt);
 
 	for (i = 0; i < size; i++) {
-		if (strncmp(codec_info->codec_vendor, extend_pa_vendor[CODEC_PA_NXP], strlen(extend_pa_vendor[CODEC_PA_NXP]))) {
+		if (strncmp(codec_info->codec_vendor, extend_pa_vendor[CODEC_PA_NXP], strlen(extend_pa_vendor[CODEC_PA_NXP])) &&
+			strncmp(codec_info->codec_vendor, extend_pa_vendor[CODEC_PA_AWINIC_DIGITAL], strlen(extend_pa_vendor[CODEC_PA_AWINIC_DIGITAL]))) {
 			continue;
 		}
 

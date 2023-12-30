@@ -3,7 +3,7 @@
  ** ODM_HQ_EDIT
  ** File: aw87339_audio.c
  ** Description: source file of aw87339 speaker pa
- ** Version :1.0
+ ** Version: 1.0
  ** Date : 2019/10/09
  ** Author: fanxiongnan@ODM.HQ.Multimedia.Audio
  ** ---------------- Revision History: --------------------------
@@ -53,12 +53,12 @@ struct aw87339_container *aw87339_rcvspk_cnt;
 /*liugezi@awinic 20191203*/
 struct aw87339_container *aw87339_voicespk_cnt;
 
-static char *aw87339_kspk_name = "aw87339/aw87339_kspk.bin";
-static char *aw87339_drcv_name = "aw87339/aw87339_drcv.bin";
-static char *aw87339_abrcv_name = "aw87339/aw87339_abrcv.bin";
-static char *aw87339_rcvspk_name = "aw87339/aw87339_rcvspk.bin";
+static char *aw87339_kspk_name = "../../odm/firmware/aw87339/aw87339_kspk.bin";
+static char *aw87339_drcv_name = "../../odm/firmware/aw87339/aw87339_drcv.bin";
+static char *aw87339_abrcv_name = "../../odm/firmware/aw87339/aw87339_abrcv.bin";
+static char *aw87339_rcvspk_name = "../../odm/firmware/aw87339/aw87339_rcvspk.bin";
 /*liugezi@awinic 20191203*/
-static char *aw87339_voicespk_name = "aw87339/aw87339_voicespk.bin";
+static char *aw87339_voicespk_name = "../../odm/firmware/aw87339/aw87339_voicespk.bin";
 
 unsigned int kspk_load_cont;
 unsigned int drcv_load_cont;
@@ -343,7 +343,6 @@ unsigned char aw87339_audio_off(void)
 	return 0;
 }
 
-/* wuhui@Multimedia.AudioDriver 2021/01/02,Add for aw87339 probed */
 int aw87339_audio_probe_get(void)
 {
 	if (aw87339_probed == 1) {

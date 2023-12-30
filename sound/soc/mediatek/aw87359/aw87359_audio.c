@@ -58,12 +58,12 @@ struct aw87359_container *aw87359_abrcv_cnt;
 /* sunjingtao@huaqin modify at 20200525 */
 struct aw87359_container *aw87359_dspk_ftm_cnt;
 
-static char *aw87359_dspk_name = "aw87359/aw87359_dspk.bin";
-static char *aw87359_drcv_name = "aw87359/aw87359_drcv.bin";
-static char *aw87359_abspk_name = "aw87359/aw87359_abspk.bin";
-static char *aw87359_abrcv_name = "aw87359/aw87359_abrcv.bin";
+static char *aw87359_dspk_name = "../../odm/firmware/aw87359/aw87359_dspk.bin";
+static char *aw87359_drcv_name = "../../odm/firmware/aw87359/aw87359_drcv.bin";
+static char *aw87359_abspk_name = "../../odm/firmware/aw87359/aw87359_abspk.bin";
+static char *aw87359_abrcv_name = "../../odm/firmware/aw87359/aw87359_abrcv.bin";
 /* sunjingtao@huaqin modify at 20200525 */
-static char *aw87359_dspk_ftm_name = "aw87359/aw87359_dspk_ftm.bin";
+static char *aw87359_dspk_ftm_name = "../../odm/firmware/aw87359/aw87359_dspk_ftm.bin";
 
 unsigned int dspk_load_cont;
 unsigned int aw87359_drcv_load_cont;

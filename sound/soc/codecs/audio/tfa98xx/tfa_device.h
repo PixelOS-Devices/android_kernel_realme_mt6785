@@ -98,6 +98,8 @@ struct tfa_device_ops {
 	// Allow to change internal osc. gating settings
 	enum Tfa98xx_Error (*set_osc_powerdown)(struct tfa_device *tfa,
 						int state);
+	/*To support tfa9873*/
+	enum Tfa98xx_Error(*update_lpm)(struct tfa_device *tfa, int state); /**< Allow to change lowpowermode settings */
 };
 
 /**
@@ -168,15 +170,22 @@ struct tfa_device {
 	int convert_dsp32;    /**< convert 24 bit DSP messages to 32 bit */
 	int sync_iv_delay;    /**< synchronize I/V delay at cold start */
 	int is_probus_device; /**< probus device: device without internal DSP */
+	/*To support tfa9873*/
+	int advance_keys_handling;
 	int needs_reset; // add the reset trigger for SetAlgoParams and SetMBDrc
 			 // commands
 	struct kmem_cache *cachep; /**< Memory allocator handle */
 
-	#ifdef VENDOR_EDIT
-	/*Jianfeng.Qiu@PSW.MM.AudioDriver.SmartPA, 2019/09/10, Add for calibration range*/
+	/*To support tfa9873*/
+	char fw_itf_ver[4];          /* Firmware ITF version */
+
 	u32 min_mohms;
 	u32 max_mohms;
-	#endif /* VENDOR_EDIT */
+
+	const char *fw_name;
+
+	/* 0-left/top, 1-right/bottom, 0xff-default, not initialized */
+	u32 channel;
 };
 
 /**
@@ -335,6 +344,9 @@ void tfa9896_ops(struct tfa_device_ops *ops);
 void tfa9890_ops(struct tfa_device_ops *ops);
 void tfa9895_ops(struct tfa_device_ops *ops);
 void tfa9894_ops(struct tfa_device_ops *ops);
+
+/*To support tfa9873*/
+void tfa9873_ops(struct tfa_device_ops *ops);
 
 #endif /* __TFA_DEVICE_H__ */
 

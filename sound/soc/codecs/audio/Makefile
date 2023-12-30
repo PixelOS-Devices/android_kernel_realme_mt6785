@@ -11,9 +11,20 @@
 # GNU General Public License for more details.
 #
 
-# Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/10/10, add for audiohal feedback
 obj-y += driver/
-# Zhao.Pan@MULTIMEDIA.AUDIODRIVER.SMARTPA, 2020/04/28, add for aw87339 PA
 #obj-y += aw87339/
-# Jingjing.Jiang@MULTIMEDIA.AUDIODRIVER.SMARTPA, 2020/05/19, add for tfa98xx smartPA
 obj-$(CONFIG_SND_SOC_TFA9874) += tfa98xx/
+obj-$(CONFIG_SND_SOC_FSA) += fsa44xx/
+obj-$(CONFIG_SND_SOC_TFA_HAPTIC) += tfa_haptic/
+obj-$(CONFIG_SIA_PA_ALGO) += sia81xx/
+obj-$(CONFIG_SND_SOC_CODEC_AW87339) += aw87339/
+obj-$(CONFIG_SND_SOC_CODEC_AW882XX) += aw882xx_v1.10.0/
+
+obj-$(CONFIG_SND_SOC_AW87XXX) += awinic/
+obj-$(CONFIG_SND_SOC_OPLUS_PA_MANAGER) += oplus_speaker_manager/oplus_speaker_manager.o
+
+obj-$(CONFIG_SND_SOC_CODEC_AW88264) += aw882xx/
+
+obj-$(CONFIG_SND_SOC_DBMDX) += dbmdx/
+
+obj-$(CONFIG_SND_SOC_CODEC_AW87418) += aw87xxx/

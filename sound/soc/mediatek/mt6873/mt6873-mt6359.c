@@ -17,10 +17,6 @@
 #include "../../codecs/mt6359.h"
 #include "../common/mtk-sp-spk-amp.h"
 
-#ifdef OPLUS_BUG_COMPATIBILITY
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.Codec, 2019/09/27, add for SIA PA ALGO */
-#include "../sia81xx/sia81xx_aux_dev_if.h"
-#endif /* OPLUS_BUG_COMPATIBILITY */
 /*
  * if need additional control for the ext spk amp that is connected
  * after Lineout Buffer / HP Buffer on the codec, put the control in
@@ -59,14 +55,12 @@ static const struct soc_enum mt6873_spk_type_enum[] = {
 			    mt6873_spk_i2s_type_str),
 };
 #ifdef CONFIG_SND_SOC_CODEC_AW87339
-/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for awinic PA */
 extern unsigned char aw87339_audio_spk_if_kspk(void);
 extern unsigned char aw87339_audio_spk_if_off(void);
 #endif  /*CONFIG_SND_SOC_CODEC_AW87339*/
 
 
 #ifdef OPLUS_BUG_COMPATIBILITY
-/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for audio extern config */
 enum oplus_pa_type_def {
 	OPLUS_PA_NXP = 0,
 	OPLUS_PA_AWINIC,
@@ -204,7 +198,6 @@ static int mt6873_mt6359_spk_amp_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_POST_PMU:
 		/* spk amp on control */
 #ifdef CONFIG_SND_SOC_CODEC_AW87339
-/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for awinic PA */
 		if (OPLUS_PA_AWINIC == oplus_pa_type) {
 			aw87339_audio_spk_if_kspk();
 		}
@@ -213,7 +206,6 @@ static int mt6873_mt6359_spk_amp_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMD:
 		/* spk amp off control */
 #ifdef CONFIG_SND_SOC_CODEC_AW87339
-/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for awinic PA */
 		if (OPLUS_PA_AWINIC == oplus_pa_type) {
 			aw87339_audio_spk_if_off();
 		}
@@ -247,7 +239,6 @@ static const struct snd_kcontrol_new mt6873_mt6359_controls[] = {
 	SOC_ENUM_EXT("EXT_SPEAKER_MODE", ext_spk_mode_enum[0],
 		     ext_spk_mode_get, ext_spk_mode_set),
 	#ifdef OPLUS_BUG_COMPATIBILITY
-	/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for audio extern config */
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		.name = "OPLUS_AUDIO_EXTERN_CONFIG",
@@ -1224,6 +1215,13 @@ static struct snd_soc_dai_link mt6873_mt6359_dai_links[] = {
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
+	{
+		.name = "DSP_Playback_Fm_Adsp",
+		.stream_name = "DSP_Playback_Fm_Adsp",
+		.cpu_dai_name = "audio_task_fm_adsp_dai",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+	},
 #endif
 #ifdef CONFIG_MTK_VOW_SUPPORT
 	{
@@ -1241,6 +1239,16 @@ static struct snd_soc_dai_link mt6873_mt6359_dai_links[] = {
 		.stream_name = "SCP_SPK_Playback",
 		.cpu_dai_name = "snd-soc-dummy-dai",
 		.platform_name = "snd_scp_spk",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+	},
+#endif
+#if defined(CONFIG_MTK_ULTRASND_PROXIMITY)
+	{
+		.name = "SCP_ULTRA_Playback",
+		.stream_name = "SCP_ULTRA_Playback",
+		.cpu_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "snd_scp_ultra",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
@@ -1270,7 +1278,6 @@ static int mt6873_mt6359_dev_probe(struct platform_device *pdev)
 	int spk_out_dai_link_idx, spk_iv_dai_link_idx;
 	const char *name;
 #ifdef OPLUS_BUG_COMPATIBILITY
-/* Zhao.Pan@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/04/23, add for audio extern config */
 	read_audio_extern_config_dts(pdev);
 #endif  /*OPLUS_BUG_COMPATIBILITY*/
 
@@ -1351,15 +1358,6 @@ static int mt6873_mt6359_dev_probe(struct platform_device *pdev)
 	}
 
 	card->dev = &pdev->dev;
-#ifdef OPLUS_BUG_COMPATIBILITY
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.Codec, 2019/09/27, add for SIA PA ALGO */
-	ret = soc_aux_init_only_sia81xx(pdev, card);
-        dev_err(&pdev->dev, "%s soc_aux_init_only_sia8108 %d\n",
-            __func__, ret);
-	if (ret)
-		dev_err(&pdev->dev, "%s soc_aux_init_only_sia8108 fail %d\n",
-			__func__, ret);
-#endif /* OPLUS_BUG_COMPATIBILITY */
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret)

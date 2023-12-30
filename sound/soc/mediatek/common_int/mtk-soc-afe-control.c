@@ -2633,7 +2633,6 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	struct afe_block_t *Afe_Block;
 	unsigned long flags;
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	kal_int32 Afe_consumed_bytes_ktv = 0;
 #endif /* CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM */
 	Afe_Block = &(afe_mem_ctrl[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
@@ -2730,7 +2729,6 @@ void Auddrv_DL1_Interrupt_Handler(void)
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-		/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 		//pr_info("%s: ReadIdx:%x ,DataRemained:%x\n", __func__,
 		//	       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 		if (ktv_running == 1) {
@@ -2776,16 +2774,10 @@ void Auddrv_DL1_Interrupt_Handler(void)
 }
 
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature.1209435, 2017/08/01,
- * add for KTV */
 
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.Feature, 2018/03/01,
- * set offset as 1920 bytes which refers to 5ms */
 #define NOISE_OFFSET (1920)
 #define NOISE_MIN_OFFSET (480)
 
-/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature.1217318, 2018/01/09,
- * add 24bit limit for mixing sound and music to reduce noise */
 #define LIMIT_24BIT 8388608
 void ktv_data_mix(char *sourseFile1, char *sourseFile2, int32_t frames) // the third param is frame not byte
 {
@@ -2822,7 +2814,6 @@ void auddrv_dl1_write_init(void)
 	user_dl_block.u4DMAReadIdx = (afe_block->u4DMAReadIdx + noiseOffset) % afe_block->u4BufferSize;
 	user_dl_block.u4BufferSize = afe_block->u4BufferSize;
 
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	user_dl_block.u4DataRemained = noiseOffset;
 	prevu4read = afe_block->u4DMAReadIdx;
 
@@ -2840,7 +2831,6 @@ void auddrv_dl1_write_handler(kal_uint32 bytes)
 	struct afe_block_t *user_block = &(user_dl_block);
 	unsigned long flags;
 
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	long wait_time, tout;
 	wait_queue_entry_t wait;
 	wait_time = msecs_to_jiffies(20);
@@ -2867,7 +2857,6 @@ void auddrv_dl1_write_handler(kal_uint32 bytes)
 
 	spin_lock_irqsave(&ktv_dl_data_lock, flags);
 
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	if (((user_block->u4DMAReadIdx + afe_block->u4BufferSize - afe_block->u4DMAReadIdx) % afe_block->u4BufferSize) >= (afe_block->u4BufferSize * 3 / 4)) {
 		pr_warn("%s: data speed does not match, remained %d bytes, reset\n", __func__, afe_block->u4DataRemained);
 		auddrv_dl1_write_init();
@@ -2889,7 +2878,6 @@ void auddrv_dl1_write_handler(kal_uint32 bytes)
 
 	user_block->u4DMAReadIdx = (user_block->u4DMAReadIdx + ktvUnitSize) % user_block->u4BufferSize;
 
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	user_block->u4DataRemained += ktvUnitSize;
 
 	spin_unlock_irqrestore(&ktv_dl_data_lock, flags);
@@ -4363,7 +4351,6 @@ get_dlmem_frame_index(struct snd_pcm_substream *substream,
 	struct afe_block_t *Afe_Block = &afe_mem_control->rBlock;
 	unsigned long flags;
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-	/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 	kal_int32 Afe_consumed_bytes_ktv = 0;
 #endif /* CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM */
 
@@ -4431,7 +4418,6 @@ get_dlmem_frame_index(struct snd_pcm_substream *substream,
 		Frameidx = bytes_to_frames(substream->runtime,
 					   Afe_Block->u4DMAReadIdx);
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-			/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 			//pr_info("%s: ReadIdx:%x ,DataRemained:%x\n", __func__,
 			//		   Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 			if (ktv_running == 1) {
@@ -4863,7 +4849,6 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 #endif
 		}
 #ifdef CONFIG_OPLUS_FEATURE_KTV_V2_NONDAPM
-		/* Yongzhi.Zhang@PSW.MM.AudioDriver.feature, 2019/11/25, add for KTV 2.0 */
 		//pr_info("%s: ReadIdx:%x ,DataRemained:%x\n", __func__,
 		//		   Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 		if (ktv_running == 1) {

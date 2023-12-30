@@ -14,6 +14,7 @@
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 #include "audio_task.h"
 #include "../audio_dsp/mtk-dsp-common_define.h"
+#include "../audio_dsp/mtk-dsp-mem-control.h"
 #include "audio_messenger_ipi.h"
 #endif
 
@@ -25,6 +26,9 @@
 #ifdef CONFIG_SND_SOC_MT6660
 #include "../../codecs/mt6660.h"
 #endif /* CONFIG_SND_SOC_MT6660 */
+#ifdef CONFIG_SND_SOC_RT5512
+#include "../../codecs/rt5512.h"
+#endif /* CONFIG_SND_SOC_RT5512 */
 
 #ifdef CONFIG_SND_SOC_TFA9874
 #include "../../codecs/tfa98xx/inc/tfa98xx_ext.h"
@@ -61,6 +65,14 @@ static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
 		.codec_name = "MT6660_MT_0",
 	},
 #endif /* CONFIG_SND_SOC_MT6660 */
+#ifdef CONFIG_SND_SOC_RT5512
+	[MTK_SPK_MEDIATEK_RT5512] = {
+		.i2c_probe = rt5512_i2c_probe,
+		.i2c_remove = rt5512_i2c_remove,
+		.codec_dai_name = "rt5512-aif",
+		.codec_name = "RT5512_MT_0",
+	},
+#endif /* CONFIG_SND_SOC_RT5512 */
 
 #ifdef CONFIG_SND_SOC_TFA9874
 	[MTK_SPK_NXP_TFA98XX] = {
@@ -69,7 +81,7 @@ static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
 		.codec_dai_name = "tfa98xx-aif",
 		.codec_name = "tfa98xx",
 	},
-#endif /* CONFIG_SND_SOC_MT6660 */
+#endif /* CONFIG_SND_SOC_TFA9874 */
 };
 
 static int mtk_spk_i2c_probe(struct i2c_client *client,
@@ -413,8 +425,16 @@ int mtk_spk_send_ipi_buf_to_dsp(void *data_buffer, uint32_t data_size)
 	int task_scene;
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
-	task_scene = mtk_get_speech_status() ?
-		     TASK_SCENE_CALL_FINAL : TASK_SCENE_AUDPLAYBACK;
+	if (get_task_attr(AUDIO_TASK_CALL_FINAL_ID,
+			ADSP_TASK_ATTR_RUNTIME) > 0)
+		task_scene = TASK_SCENE_CALL_FINAL;
+	else if (get_task_attr(AUDIO_TASK_PLAYBACK_ID,
+			ADSP_TASK_ATTR_RUNTIME) > 0)
+		task_scene = TASK_SCENE_AUDPLAYBACK;
+	else {
+		pr_info("%s(), callfinal and playback are not enable\n", __func__);
+		return result;
+	}
 
 	result = audio_send_ipi_buf_to_dsp(&ipi_msg, task_scene,
 					   AUDIO_DSP_TASK_AURISYS_SET_BUF,
@@ -434,8 +454,16 @@ int mtk_spk_recv_ipi_buf_from_dsp(int8_t *buffer,
 	int task_scene;
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
-	task_scene = mtk_get_speech_status() ?
-		     TASK_SCENE_CALL_FINAL : TASK_SCENE_AUDPLAYBACK;
+	if (get_task_attr(AUDIO_TASK_CALL_FINAL_ID,
+			ADSP_TASK_ATTR_RUNTIME) > 0)
+		task_scene = TASK_SCENE_CALL_FINAL;
+	else if (get_task_attr(AUDIO_TASK_PLAYBACK_ID,
+			ADSP_TASK_ATTR_RUNTIME) > 0)
+		task_scene = TASK_SCENE_AUDPLAYBACK;
+	else {
+		pr_info("%s(), callfinal and playback are not enable\n", __func__);
+		return result;
+	}
 
 	result = audio_recv_ipi_buf_from_dsp(&ipi_msg,
 					     task_scene,
@@ -447,9 +475,7 @@ int mtk_spk_recv_ipi_buf_from_dsp(int8_t *buffer,
 EXPORT_SYMBOL(mtk_spk_recv_ipi_buf_from_dsp);
 
 static const struct i2c_device_id mtk_spk_i2c_id[] = {
-#ifdef CONFIG_SND_SOC_TFA9874
 	{ "tfa98xx", 0},
-#endif
 	{ "speaker_amp", 0},
 	{}
 };
@@ -457,9 +483,7 @@ MODULE_DEVICE_TABLE(i2c, mtk_spk_i2c_id);
 
 #ifdef CONFIG_OF
 static const struct of_device_id mtk_spk_match_table[] = {
-#ifdef CONFIG_SND_SOC_TFA9874
 	{.compatible = "nxp,tfa98xx",},
-#endif
 	{.compatible = "mediatek,speaker_amp",},
 	{},
 };
